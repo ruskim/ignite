@@ -188,7 +188,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         IgniteCache<String, Integer> cache = jcache(0);
 
-        assertEquals(null, needVer ? cache.getEntry(key).getValue() : cache.get(key));
+        assertEquals(null, needVer ? cache.getEntry(key) : cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -222,7 +222,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Get 3.");
 
-        assertEquals(null, needVer ? cache.getEntry(key).getValue() : cache.get(key));
+        assertEquals(null, needVer ? cache.getEntry(key) : cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
