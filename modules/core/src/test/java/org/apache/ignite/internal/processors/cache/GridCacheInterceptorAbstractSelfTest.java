@@ -293,7 +293,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
-    public void testGetAll(boolean needVer) throws Exception {
+    private void testGetAll(boolean needVer) throws Exception {
         Set<String> keys = new LinkedHashSet<>();
 
         for (int i = 0; i < 1000; i++)
