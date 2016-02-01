@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1409,25 +1410,34 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         if (needVer) {
                             if (txEntry.op() != READ)
-                                ver = xidVersion();
+                                ver = IgniteTxEntry.GET_ENTRY_INVALID_VER_UPDATED;
                             else {
-                                if (serializable()) {
-                                    ver = txEntry.serializableReadVersion();
+                                ver = txEntry.entryReadVersion();
 
-                                    assert ver != null; // TODO: value should not be null;
-                                }
-                                else if (optimistic()) {
-                                    assert isolation() == TransactionIsolation.REPEATABLE_READ;
+                                if (ver == null && pessimistic()) {
+                                    while (true) {
+                                        try {
+                                            GridCacheEntryEx cached = txEntry.cached();
 
-                                    throw new IgniteCheckedException(
-                                        "Impossible to getEntry() or getEntries() after get() at " +
-                                            "OPTIMISTIC REPEATABLE_READ case. " +
-                                            "Use only getEntry() or getEntries() to solve the problem. ");
+                                            ver = cached.isNear() ?
+                                                ((GridNearCacheEntry)cached).dhtVersion() : cached.version();
+
+                                            break;
+                                        }
+                                        catch (GridCacheEntryRemovedException rmvdErr) {
+                                            txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topVer));
+                                        }
+                                    }
                                 }
-                                else {
-                                    assert ver != null; // TODO: value should not be null;
+
+                                if (ver == null) {
+                                    assert optimistic() && repeatableRead() : this;
+
+                                    ver = IgniteTxEntry.GET_ENTRY_INVALID_VER_AFTER_GET;
                                 }
                             }
+
+                            assert ver != null;
                         }
 
                         cacheCtx.addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, false, ver);
@@ -1601,7 +1611,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 if (needReadVer) {
                                     assert readVer != null;
 
-                                    txEntry.serializableReadVersion(readVer);
+                                    txEntry.entryReadVersion(readVer);
                                 }
                             }
                         }
@@ -1751,7 +1761,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             if (needReadVer) {
                                 assert loadVer != null;
 
-                                txEntry.serializableReadVersion(loadVer);
+                                txEntry.entryReadVersion(loadVer);
                             }
 
                             if (visibleVal != null) {
@@ -1771,6 +1781,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         final GridCacheContext cacheCtx,
         Collection<KeyCacheObject> keys,
@@ -1915,6 +1926,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             deserializeBinary,
                                             false,
                                             readVer);
+
+                                        if (readVer != null)
+                                            txEntry.entryReadVersion(readVer);
                                     }
 
                                     // Even though we bring the value back from lock acquisition,
@@ -2399,7 +2413,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     if (needReadVer) {
                         assert loadVer != null;
 
-                        e.serializableReadVersion(singleRmv && val != null ? SER_READ_NOT_EMPTY_VER : loadVer);
+                        e.entryReadVersion(singleRmv && val != null ? SER_READ_NOT_EMPTY_VER : loadVer);
                     }
 
                     if (singleRmv) {
@@ -2592,7 +2606,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             if (needReadVer) {
                                 assert readVer != null;
 
-                                txEntry.serializableReadVersion(singleRmv ? SER_READ_NOT_EMPTY_VER : readVer);
+                                txEntry.entryReadVersion(singleRmv ? SER_READ_NOT_EMPTY_VER : readVer);
                             }
                         }
 
@@ -2645,7 +2659,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             if (needReadVer) {
                                 assert readVer != null;
 
-                                txEntry.serializableReadVersion(singleRmv ? SER_READ_NOT_EMPTY_VER : readVer);
+                                txEntry.entryReadVersion(singleRmv ? SER_READ_NOT_EMPTY_VER : readVer);
                             }
 
                             if (retval && !transform)
