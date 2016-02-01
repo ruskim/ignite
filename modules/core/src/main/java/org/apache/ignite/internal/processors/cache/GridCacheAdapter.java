@@ -1405,7 +1405,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.config().getInterceptor() != null) {
             V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
-            val = new CacheEntryImplEx<>(key, val0, t != null ? t.get2() : null);
+            val = (val0 != null) ? new CacheEntryImplEx<>(key, val0, t != null ? t.get2() : null) : null;
         }
 
         if (statsEnabled)
