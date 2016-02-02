@@ -98,7 +98,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testReadThroughInTx(boolean needVer) throws Exception {
+    private void testReadThroughInTx(boolean needVer) throws Exception {
         IgniteCache<String, Integer> cache = grid(1).cache(null);
 
         for (int k = 0; k < 1000; k++)
@@ -151,7 +151,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testReadThrough(boolean needVer) throws Exception {
+    private void testReadThrough(boolean needVer) throws Exception {
         IgniteCache<String, Integer> cache = grid(1).cache(null);
 
         for (int k = 0; k < 1000; k++)
