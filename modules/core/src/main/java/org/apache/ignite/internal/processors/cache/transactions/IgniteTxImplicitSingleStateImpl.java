@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -46,9 +45,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     private GridCacheContext cacheCtx;
 
-    /**
-     * Entry is stored as singleton list for performance optimization.
-     */
+    /** Entry is stored as singleton list for performance optimization. */
     private List<IgniteTxEntry> entry;
 
     /** */
@@ -226,7 +223,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
-        return entry != null ? F.asMap(entry.get(0).txKey(), entry.get(0)) : Collections.<IgniteTxKey, IgniteTxEntry>emptyMap();
+        return entry != null ? F.asMap(entry.get(0).txKey(), entry.get(0)) :
+            Collections.<IgniteTxKey, IgniteTxEntry>emptyMap();
     }
 
     /** {@inheritDoc} */
