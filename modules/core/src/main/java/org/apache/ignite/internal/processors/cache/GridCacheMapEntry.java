@@ -1788,7 +1788,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     key,
                     val,
                     old,
-                    isInternal() || !context().userCache(),
+                    internal,
                     partition(),
                     true,
                     false,
