@@ -432,6 +432,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             item.autoUnsubscribe, false))
                             item.hnd.onListenerRegistered(item.routineId, ctx);
                     }
+
+                    if (!item.autoUnsubscribe)
+                        // Register routine locally.
+                        locInfos.put(item.routineId, new LocalRoutineInfo(
+                            item.prjPred, item.hnd, item.bufSize, item.interval, item.autoUnsubscribe));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to register continuous handler.", e);
