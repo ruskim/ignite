@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static javax.cache.event.EventType.CREATED;
@@ -182,10 +183,32 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param internal Internal entry flag (internal key or not user cache).
+     * @param preload Whether update happened during preloading.
+     * @return Registered listeners.
+     */
+    @Nullable public Map<UUID, CacheContinuousQueryListener> updateListeners(
+        boolean internal,
+        boolean preload) {
+        if (preload && !internal)
+            return null;
+
+        ConcurrentMap<UUID, CacheContinuousQueryListener> lsnrCol;
+
+        if (internal)
+            lsnrCol = intLsnrCnt.get() > 0 ? intLsnrs : null;
+        else
+            lsnrCol = lsnrCnt.get() > 0 ? lsnrs : null;
+
+        return F.isEmpty(lsnrCol) ? null : lsnrCol;
+    }
+
+    /**
      * @param key Key.
      * @param newVal New value.
      * @param oldVal Old value.
-     * @param internal Internal entry (internal key or not user cache),
+     * @param internal Internal entry (internal key or not user cache).
+     * @param partId Partition.
      * @param primary {@code True} if called on primary node.
      * @param preload Whether update happened during preloading.
      * @param updateCntr Update counter.
@@ -201,23 +224,52 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean primary,
         boolean preload,
         long updateCntr,
+        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        Map<UUID, CacheContinuousQueryListener> lsnrCol = updateListeners(internal, preload);
+
+        if (lsnrCol != null) {
+            onEntryUpdated(
+                lsnrCol,
+                key,
+                newVal,
+                oldVal,
+                internal,
+                partId,
+                primary,
+                preload,
+                updateCntr,
+                topVer);
+        }
+    }
+
+    /**
+     * @param lsnrCol Listeners to notify.
+     * @param key Key.
+     * @param newVal New value.
+     * @param oldVal Old value.
+     * @param internal Internal entry (internal key or not user cache),
+     * @param partId Partition.
+     * @param primary {@code True} if called on primary node.
+     * @param preload Whether update happened during preloading.
+     * @param updateCntr Update counter.
+     * @param topVer Topology version.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void onEntryUpdated(
+        Map<UUID, CacheContinuousQueryListener> lsnrCol,
+        KeyCacheObject key,
+        CacheObject newVal,
+        CacheObject oldVal,
+        boolean internal,
+        int partId,
+        boolean primary,
+        boolean preload,
+        long updateCntr,
         AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
         assert key != null;
-
-        if (preload && !internal)
-            return;
-
-        ConcurrentMap<UUID, CacheContinuousQueryListener> lsnrCol;
-
-        if (internal)
-            lsnrCol = intLsnrCnt.get() > 0 ? intLsnrs : null;
-        else
-            lsnrCol = lsnrCnt.get() > 0 ? lsnrs : null;
-
-        if (F.isEmpty(lsnrCol))
-            return;
+        assert lsnrCol != null;
 
         boolean hasNewVal = newVal != null;
         boolean hasOldVal = oldVal != null;

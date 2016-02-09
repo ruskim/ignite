@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,6 +57,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
@@ -70,6 +72,7 @@ import static javax.cache.event.EventType.CREATED;
 import static javax.cache.event.EventType.EXPIRED;
 import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -103,7 +106,16 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         cfg.setEagerTtl(eagerTtl());
 
+        cfg.setMemoryMode(memoryMode());
+
         return cfg;
+    }
+
+    /**
+     * @return Cache memory mode.
+     */
+    protected CacheMemoryMode memoryMode() {
+        return ONHEAP_TIERED;
     }
 
     /** {@inheritDoc} */
@@ -660,7 +672,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         cache.withExpiryPolicy(new ModifiedExpiryPolicy(new Duration(MILLISECONDS, 500))).putAll(newVals);
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (Integer key : newVals.keySet()) {
                     if (primaryCache(key, cache.getName()).get(key) != null)
@@ -670,6 +682,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                 return true;
             }
         }, 5000);
+
+        assertTrue(wait);
 
         evtsLatch.await(5000, MILLISECONDS);
 
@@ -1305,6 +1319,58 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    static class ListenerTestKey implements Serializable {
+        /** */
+        private final Integer key;
+
+        /**
+         * @param key Key.
+         */
+        public ListenerTestKey(Integer key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ListenerTestKey that = (ListenerTestKey)o;
+
+            return key.equals(that.key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return key.hashCode();
+        }
+    }
+
+    /**
+     *
+     */
+    static class ListenerTestValue implements Serializable {
+        /** */
+        private final Integer val1;
+
+        /** */
+        private final String val2;
+
+        /**
+         * @param val Value.
+         */
+        public ListenerTestValue(Integer val) {
+            this.val1 = val;
+            this.val2 = String.valueOf(val);
         }
     }
 }
