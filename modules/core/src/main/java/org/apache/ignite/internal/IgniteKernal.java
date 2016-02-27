@@ -63,6 +63,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.IgniteMultimap;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
@@ -3006,6 +3007,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return ctx.dataStructures().set(name, cfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <K,V> IgniteMultimap<K,V> multimap(String name,
+        CollectionConfiguration cfg)
+    {
+        guard();
+
+        try {
+            return ctx.dataStructures().multimap(name, cfg);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

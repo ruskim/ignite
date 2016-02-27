@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteMultimap;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
@@ -93,6 +94,7 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.ATOMIC_SEQ;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.ATOMIC_STAMPED;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.COUNT_DOWN_LATCH;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.MULTIMAP;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.QUEUE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.SEMAPHORE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.SET;
@@ -1553,6 +1555,40 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets a set from cache or creates one if it's not cached.
+     *
+     * @param name Set name.
+     * @param cfg Set configuration if new set should be created.
+     * @return Set instance.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public <K,V> IgniteMultimap<K,V> multimap(final String name,
+        @Nullable final CollectionConfiguration cfg)
+        throws IgniteCheckedException {
+        A.notNull(name, "name");
+
+        awaitInitialization();
+
+        String cacheName = null;
+
+        if (cfg != null)
+            cacheName = compatibleConfiguration(cfg);
+
+        DataStructureInfo dsInfo = new DataStructureInfo(name,
+            MULTIMAP,
+            cfg != null ? new CollectionInfo(cacheName, cfg.isCollocated()) : null);
+
+        final boolean create = cfg != null;
+
+        return getCollection(new CX1<GridCacheContext, IgniteMultimap<K,V>>() {
+            @Override public IgniteMultimap<K,V> applyx(GridCacheContext cctx) throws IgniteCheckedException {
+                return cctx.dataStructures().multimap(name, create ? cfg.isCollocated() : false, create);
+            }
+        }, dsInfo, create);
+    }
+
+    /**
      * @param log Logger.
      * @param call Callable.
      * @return Callable result.
@@ -1688,7 +1724,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         SET(IgniteSet.class.getSimpleName()),
 
         /** */
-        SEMAPHORE(IgniteSemaphore.class.getSimpleName());
+        SEMAPHORE(IgniteSemaphore.class.getSimpleName()),
+
+        /** */
+        MULTIMAP(IgniteMultimap.class.getSimpleName());
 
         /** */
         private static final DataStructureType[] VALS = values();

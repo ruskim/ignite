@@ -495,6 +495,17 @@ public interface Ignite extends AutoCloseable {
     public <T> IgniteSet<T> set(String name, @Nullable CollectionConfiguration cfg) throws IgniteException;
 
     /**
+     * Will get a named multimap from cache and create one if it has not been created yet and {@code cfg} is not
+     * {@code null}.
+     *
+     * @param name Multimap name.
+     * @param cfg Multimap configuration if new multimap should be created.
+     * @return Multimap with given properties.
+     * @throws IgniteException If multimap could not be fetched or created.
+     */
+    public <K,V> IgniteMultimap<K,V> multimap(String name, @Nullable CollectionConfiguration cfg) throws IgniteException;
+
+    /**
      * Gets an instance of deployed Ignite plugin.
      *
      * @param name Plugin name.

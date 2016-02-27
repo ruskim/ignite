@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteMultimap;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
@@ -376,6 +377,13 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
+        CollectionConfiguration cfg)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <K,V> IgniteMultimap<K,V> multimap(String name,
         CollectionConfiguration cfg)
     {
         return null;

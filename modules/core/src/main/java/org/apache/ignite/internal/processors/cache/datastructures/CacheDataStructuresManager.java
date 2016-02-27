@@ -34,6 +34,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteMultimap;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
@@ -49,6 +50,10 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapHeader;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapHeaderKey;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapImpl;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapProxy;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueProxy;
@@ -95,6 +100,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Queue query creation guard. */
     private final AtomicBoolean queueQryGuard = new AtomicBoolean();
 
+    /** Multimap map*/
+    private final ConcurrentMap<IgniteUuid, GridCacheMultimapProxy> multimapsMap;
+
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
@@ -111,6 +119,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         queuesMap = new ConcurrentHashMap8<>(10);
 
         setsMap = new ConcurrentHashMap8<>(10);
+
+        multimapsMap = new ConcurrentHashMap8<>(10);
     }
 
     /** {@inheritDoc} */
@@ -541,6 +551,78 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             blockSet(id);
 
             cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
+        }
+    }
+
+    /**
+     * @param name Multimap name.
+     * @param colloc Collocated flag.
+     * @param create Create flag.
+     * @return Multimap.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public <K,V> IgniteMultimap<K,V> multimap(final String name,
+        boolean colloc,
+        final boolean create)
+        throws IgniteCheckedException
+    {
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean colloc0 =
+            create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
+
+        return multimap0(name, colloc0, create);
+    }
+
+    /**
+     * @param name Name of multimap.
+     * @param collocated Collocation flag.
+     * @param create If {@code true} set will be created in case it is not in cache.
+     * @return Multimap.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable private <K,V> IgniteMultimap<K,V> multimap0(String name,
+        boolean collocated,
+        boolean create)
+        throws IgniteCheckedException
+    {
+        cctx.gate().enter();
+
+        try {
+            GridCacheMultimapHeaderKey key = new GridCacheMultimapHeaderKey(name);
+
+            GridCacheMultimapHeader hdr;
+
+            GridCacheAdapter cache = cctx.cache();
+
+            if (create) {
+                hdr = new GridCacheMultimapHeader(IgniteUuid.randomUuid(), collocated);
+
+                GridCacheMultimapHeader old = (GridCacheMultimapHeader)cache.getAndPutIfAbsent(key, hdr);
+
+                if (old != null)
+                    hdr = old;
+            }
+            else
+                hdr = (GridCacheMultimapHeader)cache.get(key);
+
+            if (hdr == null)
+                return null;
+
+            GridCacheMultimapProxy<K,V> mmap = multimapsMap.get(hdr.id());
+
+            if (mmap == null) {
+                GridCacheMultimapProxy<K,V> old = multimapsMap.putIfAbsent(hdr.id(),
+                    mmap = new GridCacheMultimapProxy<>(cctx, new GridCacheMultimapImpl<K,V>(cctx, name, hdr)));
+
+                if (old != null)
+                    mmap = old;
+            }
+
+            return mmap;
+        }
+        finally {
+            cctx.gate().leave();
         }
     }
 
