@@ -1557,9 +1557,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /**
      * Gets a set from cache or creates one if it's not cached.
      *
-     * @param name Set name.
-     * @param cfg Set configuration if new set should be created.
-     * @return Set instance.
+     * @param name Multimap name.
+     * @param cfg Multimap configuration if new set should be created.
+     * @return Multimap instance.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")

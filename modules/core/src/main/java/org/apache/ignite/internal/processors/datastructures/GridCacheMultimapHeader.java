@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Cache set header.
+ * Cache multimap header.
  */
 public class GridCacheMultimapHeader implements GridCacheInternal, Externalizable {
     /** */
@@ -47,7 +47,7 @@ public class GridCacheMultimapHeader implements GridCacheInternal, Externalizabl
     }
 
     /**
-     * @param id Set UUID.
+     * @param id Multimap UUID.
      * @param collocated Collocation flag.
      */
     public GridCacheMultimapHeader(IgniteUuid id, boolean collocated) {
@@ -56,7 +56,7 @@ public class GridCacheMultimapHeader implements GridCacheInternal, Externalizabl
     }
 
     /**
-     * @return Set unique ID.
+     * @return Multimap unique ID.
      */
     public IgniteUuid id() {
         return id;

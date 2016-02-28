@@ -46,10 +46,10 @@ public class GridCacheMultimapImpl<K,V> implements IgniteMultimap<K,V> {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Set name. */
+    /** Multimap name. */
     private final String name;
 
-    /** Set unique ID. */
+    /** Multimap unique ID. */
     private final IgniteUuid id;
 
     /** Collocation flag. */
@@ -87,9 +87,9 @@ public class GridCacheMultimapImpl<K,V> implements IgniteMultimap<K,V> {
 
         cache = ctx.cache();
 
-        log = ctx.logger(GridCacheSetImpl.class);
+        log = ctx.logger(GridCacheMultimapImpl.class);
 
-        hdrPart = ctx.affinity().partition(new GridCacheSetHeaderKey(name));
+        hdrPart = ctx.affinity().partition(new GridCacheMultimapHeaderKey(name));
     }
 
     public @Override boolean put(final K key, final V value) {

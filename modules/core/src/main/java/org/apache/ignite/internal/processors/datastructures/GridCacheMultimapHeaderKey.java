@@ -43,14 +43,14 @@ public class GridCacheMultimapHeaderKey implements Externalizable, GridCacheInte
     }
 
     /**
-     * @param name Set name.
+     * @param name Multimap name.
      */
     public GridCacheMultimapHeaderKey(String name) {
         this.name = name;
     }
 
     /**
-     * @return Set name.
+     * @return Multimap name.
      */
     public String name() {
         return name;
@@ -74,9 +74,9 @@ public class GridCacheMultimapHeaderKey implements Externalizable, GridCacheInte
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridCacheMultimapHeaderKey setKey = (GridCacheMultimapHeaderKey)o;
+        GridCacheMultimapHeaderKey multimapKey = (GridCacheMultimapHeaderKey)o;
 
-        return name.equals(setKey.name);
+        return name.equals(multimapKey.name);
     }
 
     /** {@inheritDoc} */

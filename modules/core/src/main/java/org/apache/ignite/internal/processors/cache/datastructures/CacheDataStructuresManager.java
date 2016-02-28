@@ -576,7 +576,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /**
      * @param name Name of multimap.
      * @param collocated Collocation flag.
-     * @param create If {@code true} set will be created in case it is not in cache.
+     * @param create If {@code true} multimap will be created in case it is not in cache.
      * @return Multimap.
      * @throws IgniteCheckedException If failed.
      */
