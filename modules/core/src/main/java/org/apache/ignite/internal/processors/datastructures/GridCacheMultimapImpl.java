@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -52,18 +51,6 @@ public class GridCacheMultimapImpl<K,V> implements IgniteMultimap<K,V> {
     /** Multimap unique ID. */
     private final IgniteUuid id;
 
-    /** Collocation flag. */
-    private final boolean collocated;
-
-    /** Queue header partition. */
-    private final int hdrPart;
-
-    /** Removed flag. */
-    private volatile boolean rmvd;
-
-    /** */
-    private final boolean binaryMarsh;
-
     /**
      * @param call Callable.
      * @return Callable result.
@@ -82,14 +69,10 @@ public class GridCacheMultimapImpl<K,V> implements IgniteMultimap<K,V> {
         this.ctx = ctx;
         this.name = name;
         id = hdr.id();
-        collocated = hdr.collocated();
-        binaryMarsh = ctx.binaryMarshaller();
 
         cache = ctx.cache();
 
         log = ctx.logger(GridCacheMultimapImpl.class);
-
-        hdrPart = ctx.affinity().partition(new GridCacheMultimapHeaderKey(name));
     }
 
     public @Override boolean put(final K key, final V value) {

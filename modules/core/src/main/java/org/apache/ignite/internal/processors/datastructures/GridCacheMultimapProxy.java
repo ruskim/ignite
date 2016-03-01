@@ -50,7 +50,7 @@ public class GridCacheMultimapProxy<K,V> implements IgniteMultimap<K,V> {
     }
 
     @Override public boolean put(final K key, final V value) {
-        /* TODO: implement enter/leave Busy */
+        /* TODO: do we need enter/leave Busy like in Set*/
         // enterBusy();
         try {
             gate.enter();
